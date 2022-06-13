@@ -1,0 +1,63 @@
+const int sendenpin = 8;
+const int empfangenpin = 12;
+unsigned long startmillis;
+
+const int datenbitsanz = 8;
+const int baud = 1; // in bit/s
+float timeperbit; // in ms
+
+// bits - parity is even
+int bits[datenbitsanz /* + 3 */];
+
+void setup() {
+    Serial.begin(9600);
+
+    pinMode(sendenpin, OUTPUT);
+    pinMode(empfangenpin, INPUT);
+
+    timeperbit = 1000 / float(baud);
+    //Serial.println(timeperbit);
+}
+
+void empfangen() {
+    //bits[0] = 1; // Startbit
+    startmillis = millis();
+    while(millis() < (startmillis + timeperbit)) {}
+
+    for(int i = 0; i < datenbitsanz; i++) {
+        unsigned long milli0 = millis();
+        //Serial.println(String(milli0));
+
+        while (millis() < (milli0 + (timeperbit / 2))) {}
+        bits[i /* + 1 */] = digitalRead(empfangenpin);    
+        
+        while(millis() < milli0 + timeperbit) {}
+        //Serial.println(bits[i]);
+    }
+    //bits[datenbitsanz - 2] = isparityeven(); // Paritybit
+    //bits[datenbitsanz - 1] = 0; // Stoppbit
+
+    for (int i = 0; i < datenbitsanz /* + 3 */; i++) {
+        Serial.println(bits[i]);
+    }
+    //Serial.println("");
+    //Serial.println(isparityeven());
+}
+
+boolean isparityeven() {
+    int count = 0;
+    for (int i = 0 /* + 1 */; i < datenbitsanz /* + 1 */; i++) {
+        if (bits[i] == 1) {count++;}
+    }
+    //Serial.println(count);
+
+    if (count % 2) {return false;}
+    else {return true;}
+}
+
+void loop() {
+    if (digitalRead(empfangenpin) == HIGH) { // kommt startbit an?
+        Serial.print("\n\n");
+        empfangen();
+    }
+}
